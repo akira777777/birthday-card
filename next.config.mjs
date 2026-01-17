@@ -1,4 +1,4 @@
-/** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig */
 
 // Get repo name from environment for GitHub Pages base path
 const isGithubPages = process.env.GITHUB_PAGES === 'true'
@@ -10,7 +10,6 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
-
   // Enable static export for GitHub Pages
   output: isGithubPages ? 'export' : undefined,
 
@@ -20,25 +19,21 @@ const nextConfig = {
   // Asset prefix for GitHub Pages
   assetPrefix: isGithubPages ? `/${repoName}/` : '',
 
-  // Image configuration for PNG-based card
   images: {
-    // Use unoptimized images for static export (GitHub Pages)
+    // Use unoptimized images for static export
     unoptimized: isGithubPages,
-    // Device sizes for responsive images
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
-    // Image sizes for srcset
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // Image formats to use
-    formats: ['image/webp', 'image/avif'],
-    // Remote patterns (if needed)
+    minimumCacheTTL: 31536000,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
       },
     ],
-    // Minimize image quality impact for PNG assets
-    minimumCacheTTL: 31536000, // 1 year cache
   },
 
   // Optimize production builds
@@ -53,32 +48,13 @@ const nextConfig = {
   // Trailing slash for GitHub Pages compatibility
   trailingSlash: isGithubPages,
 
-  // Experimental features for better performance
-  experimental: {
-    // Enable optimized package imports
-    optimizePackageImports: ['react', 'react-dom'],
-  },
-
-  // Compiler options for production
+  // Performance optimizations
+  poweredByHeader: false,
+  
+  // Compiler options for better performance
   compiler: {
-    // Remove console logs in production
-    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error'] } : false,
+    removeConsole: process.env.NODE_ENV === 'production',
   },
+};
 
-  // Headers for caching static assets
-  async headers() {
-    return [
-      {
-        source: '/birthday-card/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-    ]
-  },
-}
-
-export default nextConfig
+export default nextConfig;

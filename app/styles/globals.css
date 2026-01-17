@@ -1,0 +1,597 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  color: #f9fafb;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: manipulation;
+  user-select: none;
+  background: radial-gradient(ellipse at 20% 30%, rgba(251, 191, 36, 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 70%, rgba(96, 165, 250, 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 50%, rgba(251, 113, 133, 0.06) 0%, transparent 50%),
+    linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+}
+
+.scene__background {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.scene__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 35;
+  animation: overlay-fade-in 1s ease-out forwards;
+}
+
+@keyframes overlay-fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.scene__frame-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.85;
+}
+
+.scene__frame-image {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.scene__decorations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 1;
+}
+
+.scene__decoration {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: decoration-float 20s ease-in-out infinite;
+}
+
+.scene__decoration--1 {
+  top: 8%;
+  left: 5%;
+  animation-delay: 0s;
+}
+
+.scene__decoration--2 {
+  bottom: 12%;
+  right: 6%;
+  animation-delay: -7s;
+}
+
+.scene__decoration--3 {
+  top: 35%;
+  left: 3%;
+  animation-delay: -14s;
+}
+
+.scene__decoration--4 {
+  top: 15%;
+  right: 4%;
+  animation-delay: -10s;
+}
+
+.scene__decoration--5 {
+  bottom: 10%;
+  left: 7%;
+  animation-delay: -17s;
+}
+
+.scene__decoration--6 {
+  top: 50%;
+  right: 6%;
+  animation-delay: -23s;
+}
+
+@media (max-width: 768px) {
+  .scene__decorations {
+    opacity: 0.85;
+  }
+
+  .scene__decoration {
+    /* Smaller decorations on mobile */
+    transform: scale(0.6);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Reposition decorations for mobile */
+  .scene__decoration--1 {
+    top: 5%;
+    left: 2%;
+  }
+
+  .scene__decoration--2 {
+    bottom: 8%;
+    right: 2%;
+  }
+
+  .scene__decoration--4 {
+    top: 10%;
+    right: 2%;
+  }
+}
+
+.scene__decoration-image {
+  object-fit: contain;
+}
+
+.scene__hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.scene__text {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 6px 14px rgba(0, 0, 0, 0.55);
+  animation: text-fade 0.6s ease-out;
+}
+
+.scene__text--top {
+  top: max(env(safe-area-inset-top), 20px);
+  font-size: clamp(0.95rem, 1.2vw, 1.1rem);
+}
+
+.progress-bar {
+  position: absolute;
+  top: max(env(safe-area-inset-top), 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(80vw, 400px);
+  height: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+.progress-bar__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    #f59e0b 0%,
+    #fb7185 50%,
+    #c084fc 100%
+  );
+  border-radius: 20px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 0 20px rgba(251, 113, 133, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.progress-bar__glow {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  pointer-events: none;
+  border-radius: 20px;
+}
+
+.scene__text--bottom {
+  bottom: max(env(safe-area-inset-bottom), 28px);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+}
+
+@media (max-width: 768px) {
+  .progress-bar {
+    top: max(env(safe-area-inset-top), 55px);
+    height: 10px;
+    width: 85vw;
+  }
+}
+
+.scene__text--accent {
+  color: #fde68a;
+}
+
+.gnome {
+  position: absolute;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  will-change: transform;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+  z-index: 20;
+  /* Ensure minimum touch target size (44x44 is iOS recommendation) */
+  min-width: 44px;
+  min-height: 44px;
+  /* Prevent text selection and callouts on long press */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gnome--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gnome:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 6px;
+  border-radius: 999px;
+}
+
+/* Larger touch targets on mobile */
+@media (pointer: coarse) {
+  .gnome {
+    /* Expand clickable area without changing visual size */
+    padding: 12px;
+    margin: -12px;
+  }
+}
+
+/* Active state for touch feedback */
+.gnome:active {
+  transform: scale(0.95);
+}
+
+.gnome__sprite {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35));
+}
+
+.gnome__sprite--float {
+  animation: gnome-float var(--float-duration) ease-in-out infinite;
+  animation-delay: var(--float-delay);
+}
+
+.gnome__sprite--bounce {
+  animation: gnome-bounce 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gnome__image {
+  object-fit: contain;
+}
+
+.gnome__stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.gnome__star {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: var(--star-size);
+  animation: star-burst 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: center;
+  /* Pre-calculate position using CSS custom properties set via JS */
+  --star-x: calc(var(--star-cos) * var(--star-distance));
+  --star-y: calc(var(--star-sin) * var(--star-distance));
+}
+
+@keyframes star-burst {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) translate(var(--star-x), var(--star-y)) rotate(var(--star-rotation)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.gnome__trail-star {
+  position: fixed;
+  pointer-events: none;
+  z-index: 15;
+  transform: translate(-50%, -50%);
+  animation: trail-star-fade 1.5s ease-out forwards;
+}
+
+@keyframes trail-star-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0) rotate(0deg);
+  }
+
+  15% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.2) rotate(180deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5) rotate(360deg);
+  }
+}
+
+.card {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: min(88vw, 820px);
+  aspect-ratio: 4 / 3;
+  pointer-events: none;
+  z-index: 40;
+  animation: card-reveal 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.45));
+}
+
+.card__image {
+  object-fit: contain;
+}
+
+.card-companion {
+  position: absolute;
+  bottom: 5%;
+  right: 8%;
+  width: min(35vw, 500px);
+  height: min(45vw, 650px);
+  pointer-events: none;
+  z-index: 45;
+  animation: card-companion-appear 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
+  filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4));
+}
+
+.card-companion__image {
+  object-fit: contain;
+}
+
+@keyframes card-companion-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fireworks,
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.confetti {
+  z-index: 35;
+}
+
+.flowers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 45;
+  opacity: 0;
+  animation: flowers-fade-in 0.8s ease-out 0.5s forwards;
+}
+
+.bouquet {
+  position: absolute;
+  pointer-events: none;
+  z-index: 42;
+  opacity: 0;
+  animation: bouquet-appear 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+}
+
+.bouquet--left {
+  left: 5%;
+  bottom: 8%;
+  width: min(25vw, 300px);
+  height: min(25vw, 300px);
+  transform-origin: bottom left;
+}
+
+.bouquet--right {
+  right: 5%;
+  bottom: 8%;
+  width: min(25vw, 300px);
+  height: min(25vw, 300px);
+  transform-origin: bottom right;
+}
+
+@media (max-width: 768px) {
+  .bouquet--left {
+    left: 2%;
+    bottom: 5%;
+    width: min(35vw, 200px);
+    height: min(35vw, 200px);
+  }
+
+  .bouquet--right {
+    right: 2%;
+    bottom: 5%;
+    width: min(35vw, 200px);
+    height: min(35vw, 200px);
+  }
+
+  .card-companion {
+    bottom: 3%;
+    right: 5%;
+    width: min(45vw, 300px);
+    height: min(60vw, 400px);
+  }
+}
+
+.bouquet__image {
+  object-fit: contain;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes flowers-fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes bouquet-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(30px) rotate(-5deg);
+  }
+
+  60% {
+    transform: scale(1.05) translateY(-5px) rotate(2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes decoration-float {
+
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+
+  25% {
+    transform: translateY(-15px) translateX(10px) scale(1.02);
+  }
+
+  50% {
+    transform: translateY(-5px) translateX(-8px) scale(0.98);
+  }
+
+  75% {
+    transform: translateY(-20px) translateX(5px) scale(1.01);
+  }
+}
+
+@keyframes background-drift {
+  0% {
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: scale(1.12) translate3d(-1.5%, -1%, 0);
+  }
+
+  100% {
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes gnome-float {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--float-rotate));
+  }
+
+  50% {
+    transform: translate3d(0, -14px, 0) rotate(var(--float-rotate-alt));
+  }
+}
+
+@keyframes gnome-bounce {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+
+  45% {
+    transform: scale(1.14) translate3d(0, -18px, 0);
+  }
+
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes card-reveal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 40px, 0) scale(0.94);
+    filter: blur(6px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes text-fade {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .scene__background,
+  .gnome__sprite--float,
+  .gnome__sprite--bounce,
+  .card,
+  .scene__text {
+    animation: none !important;
+    transition: none !important;
+  }
+}
