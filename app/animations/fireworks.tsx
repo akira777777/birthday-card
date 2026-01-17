@@ -69,8 +69,14 @@ export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
 
     useImperativeHandle(ref, () => ({
       launch: (x: number, y: number, count: number = 44) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'fireworks.tsx:71',message:'fireworks launch',data:{x,y,count,particlesBefore:particlesRef.current.length,animationActive:animationFrameRef.current!==null},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         spawnParticles(x, y, count)
         ensureAnimation()
+        // #region agent log
+        fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'fireworks.tsx:74',message:'fireworks after spawn',data:{particlesAfter:particlesRef.current.length},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
       },
       clear: () => {
         particlesRef.current = []
@@ -96,6 +102,9 @@ export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
         canvas.height = height * dpr
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
         sizeRef.current = { width, height }
+        // #region agent log
+        fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'fireworks.tsx:99',message:'fireworks canvas resized',data:{width,height,dpr,particleCount:particlesRef.current.length},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
       }
 
       resize()

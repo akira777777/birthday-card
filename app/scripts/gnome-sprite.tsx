@@ -47,6 +47,9 @@ export const GnomeSprite = ({
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault()
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'gnome-sprite.tsx:48',message:'gnome sprite clicked',data:{id,x,y,width,height,calculatedCenterX:x+width/2,calculatedCenterY:y+height/2,isBouncing},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     if (isBouncing) return
 
     setIsBouncing(true)
@@ -58,6 +61,9 @@ export const GnomeSprite = ({
 
     bounceTimeoutRef.current = window.setTimeout(() => {
       setIsBouncing(false)
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'gnome-sprite.tsx:60',message:'bounce timeout completed',data:{id},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
     }, BOUNCE_DURATION)
   }
 

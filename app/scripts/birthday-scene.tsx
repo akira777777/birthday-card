@@ -48,8 +48,14 @@ export const BirthdayScene = () => {
   const gnomeDimensions = getGnomeDimensions(isMobile)
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'birthday-scene.tsx:50',message:'viewport effect triggered',data:{width:viewport.width,height:viewport.height,isMobile,gnomeCount},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     if (!viewport.width || !viewport.height) return
     setGnomes(createGnomePositions(gnomeCount, viewport, isMobile))
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'birthday-scene.tsx:53',message:'gnomes created',data:{gnomeCount,viewportValid:true},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
   }, [viewport, isMobile, gnomeCount])
 
   const runFinale = useCallback(() => {
@@ -96,6 +102,9 @@ export const BirthdayScene = () => {
 
   const handleGnomeClick = useCallback(
     (centerX: number, centerY: number, gnomeId: number) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'birthday-scene.tsx:97',message:'gnome click handler entry',data:{centerX,centerY,gnomeId,gnomesVisible,showCard,currentCount:clickCountRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       if (!gnomesVisible || showCard) return
 
       const nextCount = clickCountRef.current + 1
