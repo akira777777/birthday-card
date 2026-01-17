@@ -8,7 +8,7 @@
 
 body {
   margin: 0;
-  background: #0b0b0f;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
   color: #f9fafb;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   text-rendering: optimizeLegibility;
@@ -20,6 +20,10 @@ body {
   overflow: hidden;
   touch-action: manipulation;
   user-select: none;
+  background: radial-gradient(ellipse at 20% 30%, rgba(251, 191, 36, 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 70%, rgba(96, 165, 250, 0.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 50%, rgba(251, 113, 133, 0.06) 0%, transparent 50%),
+    linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
 }
 
 .scene__background {
@@ -28,6 +32,9 @@ body {
   filter: blur(26px) brightness(0.96) saturate(1.08);
   transform: scale(1.08);
   animation: background-drift 18s ease-in-out infinite;
+  background: radial-gradient(ellipse at 30% 40%, rgba(251, 191, 36, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(96, 165, 250, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(251, 113, 133, 0.1) 0%, transparent 50%);
 }
 
 .scene__hud {
@@ -141,6 +148,51 @@ body {
   animation: flowers-fade-in 0.8s ease-out 0.5s forwards;
 }
 
+.bouquet {
+  position: absolute;
+  pointer-events: none;
+  z-index: 42;
+  opacity: 0;
+  animation: bouquet-appear 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+}
+
+.bouquet--left {
+  left: 5%;
+  bottom: 8%;
+  width: min(25vw, 300px);
+  height: min(25vw, 300px);
+  transform-origin: bottom left;
+}
+
+.bouquet--right {
+  right: 5%;
+  bottom: 8%;
+  width: min(25vw, 300px);
+  height: min(25vw, 300px);
+  transform-origin: bottom right;
+}
+
+@media (max-width: 768px) {
+  .bouquet--left {
+    left: 2%;
+    bottom: 5%;
+    width: min(35vw, 200px);
+    height: min(35vw, 200px);
+  }
+
+  .bouquet--right {
+    right: 2%;
+    bottom: 5%;
+    width: min(35vw, 200px);
+    height: min(35vw, 200px);
+  }
+}
+
+.bouquet__image {
+  object-fit: contain;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.3));
+}
+
 @keyframes flowers-fade-in {
   0% {
     opacity: 0;
@@ -148,6 +200,22 @@ body {
 
   100% {
     opacity: 1;
+  }
+}
+
+@keyframes bouquet-appear {
+  0% {
+    opacity: 0;
+    transform: scale(0.7) translateY(30px) rotate(-5deg);
+  }
+
+  60% {
+    transform: scale(1.05) translateY(-5px) rotate(2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotate(0deg);
   }
 }
 
