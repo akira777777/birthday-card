@@ -28,7 +28,9 @@ interface ConfettiProps {
 }
 
 const COLORS = ["#f59e0b", "#fb7185", "#60a5fa", "#34d399", "#fbbf24", "#c084fc", "#f472b6", "#fde047", "#a78bfa"]
-const SHAPES: ConfettiShape[] = ["rect", "circle", "star", "heart"]
+// Simpler shapes on mobile for performance
+const SHAPES_DESKTOP: ConfettiShape[] = ["rect", "circle", "star", "heart"]
+const SHAPES_MOBILE: ConfettiShape[] = ["rect", "circle"]
 const GRAVITY = 0.12
 
 export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete }: ConfettiProps) => {
@@ -53,7 +55,11 @@ export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete
     if (!visible) return
 
     const canvas = canvasRef.current
-    const ctx = canvas?.getContext("2d")
+    const ctx = canvas?.getContext("2d", { 
+      alpha: true, 
+      desynchronized: true,
+      willReadFrequently: false 
+    })
     if (!canvas || !ctx) return
 
     const resize = () => {
@@ -73,7 +79,7 @@ export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete
       resizeTimeout = window.setTimeout(resize, 200)
     }
 
-    window.addEventListener("resize", handleResize)
+    window.addEventListener("resize", handleResize, { passive: true })
 
     return () => {
       window.removeEventListener("resize", handleResize)
@@ -90,8 +96,10 @@ export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete
 
     const { width, height } = sizeRef.current
     if (!width || !height) return
-    const baseCount = isMobile ? 80 : 140
-    const count = Math.max(40, Math.round(baseCount * motionScale))
+    // Reduced count on mobile for better performance
+    const baseCount = isMobile ? 60 : 140
+    const count = Math.max(30, Math.round(baseCount * motionScale))
+    const shapes = isMobile ? SHAPES_MOBILE : SHAPES_DESKTOP
 
     piecesRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * width,
@@ -100,13 +108,14 @@ export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete
       vy: 1.8 + Math.random() * 2.8,
       rotation: Math.random() * Math.PI * 2,
       rotationSpeed: (Math.random() - 0.5) * 0.2,
-      size: 6 + Math.random() * 8,
+      size: isMobile ? 5 + Math.random() * 6 : 6 + Math.random() * 8,
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
       life: 1,
-      decay: 0.005 + Math.random() * 0.008,
+      // Faster decay on mobile so pieces disappear sooner
+      decay: isMobile ? 0.008 + Math.random() * 0.01 : 0.005 + Math.random() * 0.008,
       sway: Math.random() * Math.PI * 2,
       swaySpeed: 0.02 + Math.random() * 0.03,
-      shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+      shape: shapes[Math.floor(Math.random() * shapes.length)],
     }))
 
     const animate = (time: number) => {

@@ -124,14 +124,33 @@ export const BirthdayScene = () => {
   return (
     <div className="scene">
       <Image
-        src={imageAssets.card}
+        src={imageAssets.mainBackground}
         alt=""
         fill
         priority
+        quality={100}
         sizes="100vw"
         className="scene__background"
         aria-hidden
       />
+
+      {/* Декоративные фоновые сцены - рендерим только если есть изображения */}
+      {imageAssets.backgroundScenes.length > 0 && (
+        <div className="scene__decorations">
+          {imageAssets.backgroundScenes.slice(0, isMobile ? 3 : 6).map((src, index) => (
+            <div key={index} className={`scene__decoration scene__decoration--${index + 1}`}>
+              <Image
+                src={src}
+                alt=""
+                width={isMobile ? 200 : 400}
+                height={isMobile ? 300 : 600}
+                className="scene__decoration-image"
+                loading="lazy"
+              />
+            </div>
+          ))}
+        </div>
+      )}
 
       <Fireworks ref={fireworksRef} isMobile={isMobile} motionScale={motionScale} />
       <Confetti
@@ -141,10 +160,21 @@ export const BirthdayScene = () => {
         onComplete={() => setConfettiActive(false)}
       />
 
+      {/* Затемнение фона при появлении открытки */}
+      {showCard && <div className="scene__overlay" />}
+
       {!showCard && (
         <div className="scene__hud">
           <div className="scene__text scene__text--top" role="status" aria-live="polite">
             Гномики: <span className="scene__text--accent">{clickCount}</span> / {clicksNeeded}
+          </div>
+          {/* Прогресс-бар */}
+          <div className="progress-bar">
+            <div 
+              className="progress-bar__fill" 
+              style={{ width: `${(clickCount / clicksNeeded) * 100}%` }}
+            />
+            <div className="progress-bar__glow" />
           </div>
           {clickCount === 0 && (
             <div className="scene__text scene__text--bottom">Найдите и нажмите на гномиков</div>
@@ -183,6 +213,16 @@ export const BirthdayScene = () => {
             />
             <Flowers />
           </div>
+          <div className="card-companion">
+            <Image
+              src={imageAssets.cardCompanion}
+              alt=""
+              fill
+              priority
+              sizes="(max-width: 768px) 300px, 500px"
+              className="card-companion__image"
+            />
+          </div>
           <div className="bouquet bouquet--left">
             <Image
               src={imageAssets.bouquets[0]}
@@ -203,6 +243,18 @@ export const BirthdayScene = () => {
           </div>
         </>
       )}
+
+      {/* Декоративная рамка-оверлей */}
+      <div className="scene__frame-overlay">
+        <Image
+          src={imageAssets.frameOverlay}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="scene__frame-image"
+        />
+      </div>
     </div>
   )
 }

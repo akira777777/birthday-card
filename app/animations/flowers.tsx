@@ -24,35 +24,46 @@ const FLOWER_COLORS = [
   { center: "#f59e0b", petals: "#fed7aa" },
 ]
 
+// Stop animating after this many seconds (flowers fully appeared + some sway)
+const ANIMATION_DURATION_SECONDS = 5
+
 export const Flowers = ({ className }: FlowersProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const flowersRef = useRef<Flower[]>([])
   const animationFrameRef = useRef<number | null>(null)
   const startTimeRef = useRef<number>(0)
+  const sizeRef = useRef({ width: 0, height: 0 })
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext("2d")
+    const ctx = canvas.getContext("2d", { 
+      alpha: true, 
+      desynchronized: true,
+      willReadFrequently: false 
+    })
     if (!ctx) return
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const isMobile = window.innerWidth < 768
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2)
       const { width, height } = canvas.getBoundingClientRect()
       canvas.width = width * dpr
       canvas.height = height * dpr
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      sizeRef.current = { width, height }
 
       // Создаём цветы в углах открытки
-      const isMobile = width < 768
       const flowerSize = isMobile ? 30 : 50
       const spacing = isMobile ? 40 : 70
+      // Меньше цветов на мобильных для производительности
+      const cornerCount = isMobile ? 2 : 3
 
       flowersRef.current = []
 
       // Левый верхний угол
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < cornerCount; i++) {
         const colorSet = FLOWER_COLORS[i % FLOWER_COLORS.length]
         flowersRef.current.push({
           x: spacing + i * (flowerSize + 10),
@@ -66,7 +77,7 @@ export const Flowers = ({ className }: FlowersProps) => {
       }
 
       // Правый верхний угол
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < cornerCount; i++) {
         const colorSet = FLOWER_COLORS[(i + 2) % FLOWER_COLORS.length]
         flowersRef.current.push({
           x: width - spacing - i * (flowerSize + 10),
@@ -144,6 +155,15 @@ export const Flowers = ({ className }: FlowersProps) => {
       ctx.restore()
     }
 
+    const drawStaticFrame = () => {
+      if (!ctx) return
+      const { width, height } = sizeRef.current
+      ctx.clearRect(0, 0, width, height)
+      flowersRef.current.forEach((flower) => {
+        drawFlower(flower, 1)
+      })
+    }
+
     const animate = (time: number) => {
       if (!ctx || !canvas) return
 
@@ -152,8 +172,16 @@ export const Flowers = ({ className }: FlowersProps) => {
       }
 
       const elapsed = (time - startTimeRef.current) / 1000
+      const { width, height } = sizeRef.current
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      // Stop animation loop after duration - draw static final frame
+      if (elapsed > ANIMATION_DURATION_SECONDS) {
+        drawStaticFrame()
+        animationFrameRef.current = null
+        return
+      }
+
+      ctx.clearRect(0, 0, width, height)
 
       flowersRef.current.forEach((flower) => {
         const timeSinceStart = elapsed - flower.delay
@@ -187,11 +215,12 @@ export const Flowers = ({ className }: FlowersProps) => {
       if (resizeTimeout) window.clearTimeout(resizeTimeout)
       resizeTimeout = window.setTimeout(() => {
         resize()
-        startTimeRef.current = 0
+        // On resize, just draw static frame instead of restarting animation
+        drawStaticFrame()
       }, 200)
     }
 
-    window.addEventListener("resize", handleResize)
+    window.addEventListener("resize", handleResize, { passive: true })
 
     return () => {
       window.removeEventListener("resize", handleResize)

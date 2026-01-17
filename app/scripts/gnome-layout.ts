@@ -13,15 +13,17 @@ export interface ViewportSize {
 }
 
 const GNOME_WIDTH_DESKTOP = 160
-const GNOME_WIDTH_MOBILE = 120
+// Increased mobile size for better touch targets (was 120)
+const GNOME_WIDTH_MOBILE = 140
 const GNOME_ASPECT_RATIO = 1.35
 const POSITION_ATTEMPTS = 18
 
 const UI_PADDING = {
   mobile: {
-    top: 120,
-    bottom: 120,
-    side: 56,
+    // Adjusted padding to account for larger gnomes and safe areas
+    top: 100,
+    bottom: 100,
+    side: 40,
   },
   desktop: {
     top: 160,

@@ -28,7 +28,9 @@ interface FireworksProps {
 const COLORS = ["#fef3c7", "#fbbf24", "#f87171", "#fb7185", "#a5b4fc", "#7dd3fc", "#6ee7b7"]
 const GRAVITY = 0.06
 const DRAG = 0.985
-const TRAIL_LENGTH = 5
+// Shorter trails on mobile for performance
+const TRAIL_LENGTH_DESKTOP = 5
+const TRAIL_LENGTH_MOBILE = 3
 
 export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
   ({ className, isMobile = false, motionScale = 1 }, ref) => {
@@ -45,7 +47,8 @@ export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
     }
 
     const spawnParticles = (x: number, y: number, count: number) => {
-      const finalCount = Math.max(12, Math.round(count * motionScale))
+      // Reduced particle count on mobile
+      const finalCount = Math.max(10, Math.round(count * motionScale * (isMobile ? 0.7 : 1)))
       const baseColor = COLORS[Math.floor(Math.random() * COLORS.length)]
 
       for (let i = 0; i < finalCount; i += 1) {
@@ -59,8 +62,9 @@ export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           life: 1,
-          decay: 0.012 + Math.random() * 0.01,
-          size: 1.5 + Math.random() * 2.8,
+          // Faster decay on mobile
+          decay: isMobile ? 0.016 + Math.random() * 0.012 : 0.012 + Math.random() * 0.01,
+          size: isMobile ? 1.2 + Math.random() * 2 : 1.5 + Math.random() * 2.8,
           color,
           trail: [],
         })
@@ -86,7 +90,11 @@ export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
       const canvas = canvasRef.current
       if (!canvas) return
 
-      const ctx = canvas.getContext("2d")
+      const ctx = canvas.getContext("2d", { 
+        alpha: true, 
+        desynchronized: true,
+        willReadFrequently: false 
+      })
       if (!ctx) return
 
       const resize = () => {
@@ -106,7 +114,7 @@ export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
         resizeTimeout = window.setTimeout(resize, 200)
       }
 
-      window.addEventListener("resize", handleResize)
+      window.addEventListener("resize", handleResize, { passive: true })
       return () => {
         window.removeEventListener("resize", handleResize)
         if (resizeTimeout) window.clearTimeout(resizeTimeout)
@@ -137,7 +145,8 @@ export const Fireworks = forwardRef<FireworksHandle, FireworksProps>(
         particle.y += particle.vy * delta * (isMobile ? 0.9 : 1)
 
         particle.trail.push({ x: particle.x, y: particle.y })
-        if (particle.trail.length > TRAIL_LENGTH) {
+        const maxTrail = isMobile ? TRAIL_LENGTH_MOBILE : TRAIL_LENGTH_DESKTOP
+        if (particle.trail.length > maxTrail) {
           particle.trail.shift()
         }
 
