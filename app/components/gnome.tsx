@@ -24,6 +24,7 @@ export function Gnome({ id, x, y, onClick, isVisible, isMobile = false }: GnomeP
   const [isHovered, setIsHovered] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const clickLockRef = useRef(false)
   
   // Get base path for GitHub Pages compatibility
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
@@ -33,25 +34,27 @@ export function Gnome({ id, x, y, onClick, isVisible, isMobile = false }: GnomeP
     ? { width: 100, height: 130 } 
     : { width: 140, height: 180 }
 
-  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleActivate = (event: React.SyntheticEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
 
-    if (isClicked) return
+    if (clickLockRef.current || isClicked) return
 
+    clickLockRef.current = true
     setIsClicked(true)
-    
+
     // Calculate center position for fireworks
     const centerX = x + size.width / 2
     const centerY = y + size.height / 2
     onClick(centerX, centerY, id)
-    
+
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current)
     }
-    
+
     clickTimeoutRef.current = setTimeout(() => {
       setIsClicked(false)
+      clickLockRef.current = false
       clickTimeoutRef.current = null
     }, 500)
   }
@@ -62,12 +65,19 @@ export function Gnome({ id, x, y, onClick, isVisible, isMobile = false }: GnomeP
       clearTimeout(clickTimeoutRef.current)
       clickTimeoutRef.current = null
     }
+
+    if (!isVisible) {
+      setIsClicked(false)
+      setIsHovered(false)
+      clickLockRef.current = false
+    }
     
     return () => {
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current)
         clickTimeoutRef.current = null
       }
+      clickLockRef.current = false
     }
   }, [isVisible])
 
@@ -78,8 +88,8 @@ export function Gnome({ id, x, y, onClick, isVisible, isMobile = false }: GnomeP
 
   return (
     <button
-      onClick={handleClick}
-      onTouchEnd={handleClick}
+      onPointerUp={handleActivate}
+      onClick={handleActivate}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`

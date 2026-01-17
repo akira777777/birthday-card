@@ -331,7 +331,7 @@ export default function BirthdayCardPage() {
       {/* PNG-based Gnomes */}
       {gnomes.map((gnome) => (
         <Gnome
-          key={`gnome-${gnome.id}-${gnome.x}-${gnome.y}`}
+          key={`gnome-${gnome.id}`}
           id={gnome.id}
           x={gnome.x}
           y={gnome.y}
