@@ -2,9 +2,10 @@
 
 import Image from "next/image"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { imageAssets } from "../assets/images"
 import { Confetti } from "../animations/confetti"
 import { Fireworks, FireworksHandle } from "../animations/fireworks"
+import { Flowers } from "../animations/flowers"
+import { imageAssets } from "../assets/images"
 import type { GnomePosition } from "./gnome-layout"
 import { createGnomePositions, getGnomeDimensions, moveGnome } from "./gnome-layout"
 import { GnomeSprite } from "./gnome-sprite"
@@ -13,8 +14,8 @@ import { useTimeouts } from "./use-timeouts"
 import { useViewport } from "./use-viewport"
 
 const CLICK_TARGET = {
-  mobile: 6,
-  desktop: 10,
+  mobile: 5,
+  desktop: 7,
 }
 
 const MOVE_DELAY = 320
@@ -48,14 +49,8 @@ export const BirthdayScene = () => {
   const gnomeDimensions = getGnomeDimensions(isMobile)
 
   useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'birthday-scene.tsx:50',message:'viewport effect triggered',data:{width:viewport.width,height:viewport.height,isMobile,gnomeCount},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     if (!viewport.width || !viewport.height) return
     setGnomes(createGnomePositions(gnomeCount, viewport, isMobile))
-    // #region agent log
-    fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'birthday-scene.tsx:53',message:'gnomes created',data:{gnomeCount,viewportValid:true},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
   }, [viewport, isMobile, gnomeCount])
 
   const runFinale = useCallback(() => {
@@ -102,9 +97,6 @@ export const BirthdayScene = () => {
 
   const handleGnomeClick = useCallback(
     (centerX: number, centerY: number, gnomeId: number) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'birthday-scene.tsx:97',message:'gnome click handler entry',data:{centerX,centerY,gnomeId,gnomesVisible,showCard,currentCount:clickCountRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       if (!gnomesVisible || showCard) return
 
       const nextCount = clickCountRef.current + 1
@@ -179,16 +171,37 @@ export const BirthdayScene = () => {
       ))}
 
       {showCard && (
-        <div className="card">
-          <Image
-            src={imageAssets.card}
-            alt="Поздравительная открытка"
-            fill
-            priority
-            sizes="(max-width: 768px) 90vw, 820px"
-            className="card__image"
-          />
-        </div>
+        <>
+          <div className="card">
+            <Image
+              src={imageAssets.card}
+              alt="Поздравительная открытка"
+              fill
+              priority
+              sizes="(max-width: 768px) 90vw, 820px"
+              className="card__image"
+            />
+            <Flowers />
+          </div>
+          <div className="bouquet bouquet--left">
+            <Image
+              src={imageAssets.bouquets[0]}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 200px, 300px"
+              className="bouquet__image"
+            />
+          </div>
+          <div className="bouquet bouquet--right">
+            <Image
+              src={imageAssets.bouquets[1]}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 200px, 300px"
+              className="bouquet__image"
+            />
+          </div>
+        </>
       )}
     </div>
   )

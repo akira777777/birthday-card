@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 
+type ConfettiShape = "rect" | "circle" | "star" | "heart"
+
 interface ConfettiPiece {
   x: number
   y: number
@@ -15,6 +17,7 @@ interface ConfettiPiece {
   decay: number
   sway: number
   swaySpeed: number
+  shape: ConfettiShape
 }
 
 interface ConfettiProps {
@@ -24,7 +27,8 @@ interface ConfettiProps {
   onComplete?: () => void
 }
 
-const COLORS = ["#f59e0b", "#fb7185", "#60a5fa", "#34d399", "#fbbf24", "#c084fc", "#f472b6"]
+const COLORS = ["#f59e0b", "#fb7185", "#60a5fa", "#34d399", "#fbbf24", "#c084fc", "#f472b6", "#fde047", "#a78bfa"]
+const SHAPES: ConfettiShape[] = ["rect", "circle", "star", "heart"]
 const GRAVITY = 0.12
 
 export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete }: ConfettiProps) => {
@@ -102,6 +106,7 @@ export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete
       decay: 0.005 + Math.random() * 0.008,
       sway: Math.random() * Math.PI * 2,
       swaySpeed: 0.02 + Math.random() * 0.03,
+      shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
     }))
 
     const animate = (time: number) => {
@@ -126,7 +131,40 @@ export const Confetti = ({ active, isMobile = false, motionScale = 1, onComplete
         ctx.translate(piece.x, piece.y)
         ctx.rotate(piece.rotation)
         ctx.fillStyle = piece.color
-        ctx.fillRect(-piece.size / 2, -piece.size / 3, piece.size, piece.size * 0.6)
+
+        switch (piece.shape) {
+          case "circle":
+            ctx.beginPath()
+            ctx.arc(0, 0, piece.size / 2, 0, Math.PI * 2)
+            ctx.fill()
+            break
+          case "star":
+            ctx.beginPath()
+            for (let i = 0; i < 5; i++) {
+              const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2
+              const radius = i % 2 === 0 ? piece.size / 2 : piece.size / 4
+              const x = Math.cos(angle) * radius
+              const y = Math.sin(angle) * radius
+              if (i === 0) ctx.moveTo(x, y)
+              else ctx.lineTo(x, y)
+            }
+            ctx.closePath()
+            ctx.fill()
+            break
+          case "heart":
+            ctx.beginPath()
+            const topCurveHeight = piece.size * 0.3
+            ctx.moveTo(0, topCurveHeight)
+            ctx.bezierCurveTo(0, 0, -piece.size / 2, 0, -piece.size / 2, topCurveHeight)
+            ctx.bezierCurveTo(-piece.size / 2, piece.size * 0.5, 0, piece.size * 0.7, 0, piece.size)
+            ctx.bezierCurveTo(0, piece.size * 0.7, piece.size / 2, piece.size * 0.5, piece.size / 2, topCurveHeight)
+            ctx.bezierCurveTo(piece.size / 2, 0, 0, 0, 0, topCurveHeight)
+            ctx.fill()
+            break
+          default: // rect
+            ctx.fillRect(-piece.size / 2, -piece.size / 3, piece.size, piece.size * 0.6)
+        }
+
         ctx.restore()
 
         return piece.y < height + 80

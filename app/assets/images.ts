@@ -12,4 +12,8 @@ export const imageAssets = {
     buildAssetPath("Слой 3.png"),
     buildAssetPath("Слой 4.png"),
   ],
+  bouquets: [
+    buildAssetPath("bouquet-1.png"),
+    buildAssetPath("bouquet-2.png"),
+  ],
 }

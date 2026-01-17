@@ -96,3 +96,5 @@
 {"location":"fireworks.tsx:99","message":"fireworks canvas resized","data":{"width":300,"height":150,"dpr":1,"particleCount":0},"timestamp":1768650010954,"sessionId":"debug-session","runId":"initial","hypothesisId":"D"}
 {"location":"birthday-scene.tsx:50","message":"viewport effect triggered","data":{"width":1004,"height":819,"isMobile":false,"gnomeCount":3},"timestamp":1768650010955,"sessionId":"debug-session","runId":"post-fix","hypothesisId":"A"}
 {"location":"birthday-scene.tsx:53","message":"gnomes created","data":{"gnomeCount":3,"viewportValid":true},"timestamp":1768650010955,"sessionId":"debug-session","runId":"post-fix","hypothesisId":"A"}
+{"location":"fireworks.tsx:99","message":"fireworks canvas resized","data":{"width":300,"height":150,"dpr":1,"particleCount":0},"timestamp":1768650015283,"sessionId":"debug-session","runId":"initial","hypothesisId":"D"}
+{"location":"fireworks.tsx:99","message":"fireworks canvas resized","data":{"width":300,"height":150,"dpr":1,"particleCount":0},"timestamp":1768650015284,"sessionId":"debug-session","runId":"initial","hypothesisId":"D"}
