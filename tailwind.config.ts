@@ -46,6 +46,9 @@ const config = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
       },
+      ringOffset: {
+        background: "hsl(var(--background))",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
