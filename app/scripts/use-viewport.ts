@@ -11,9 +11,6 @@ export const useViewport = (): ViewportSize => {
 
   useEffect(() => {
     const updateViewport = () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7245/ingest/f6222dd9-f5c7-4c16-892a-92bc4115664b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'use-viewport.ts:8',message:'viewport updated',data:{width:window.innerWidth,height:window.innerHeight},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       setViewport({ width: window.innerWidth, height: window.innerHeight })
     }
 
