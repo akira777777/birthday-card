@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 interface ConfettiPiece {
   id: number
@@ -12,11 +12,9 @@ interface ConfettiPiece {
   rotationSpeed: number
   color: string
   size: number
-  life: number
-  maxLife: number
-  shape: "rect" | "circle" | "star"
-  wobble: number
-  wobbleSpeed: number
+  life: number // remaining seconds
+  maxLife: number // seconds
+  shape: "rect" | "circle"
 }
 
 interface ConfettiProps {
@@ -25,12 +23,10 @@ interface ConfettiProps {
   isMobile?: boolean
 }
 
-// Festive confetti colors
 const confettiColors = [
   "#FF6B6B", "#4ECDC4", "#FFD93D", "#6BCF7F", "#A8E6CF",
   "#95E1D3", "#F38181", "#FFA07A", "#C7CEEA", "#FF9FF3",
-  "#54A0FF", "#5F27CD", "#00D2D3", "#FF9F43", "#FDCB6E",
-  "#E17055", "#00CEC9", "#FAB1A0", "#74B9FF", "#A29BFE"
+  "#54A0FF", "#5F27CD", "#00D2D3", "#FF9F43", "#FF6348"
 ]
 
 export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps) {
@@ -39,28 +35,23 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
   const confettiPiecesRef = useRef<ConfettiPiece[]>([])
   const [shouldRender, setShouldRender] = useState(false)
   const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const lastSpawnRef = useRef(0)
-  const isAnimatingRef = useRef(false)
+  const lastTimeRef = useRef<number>(0)
+  const sizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 })
 
-  // Create a single confetti piece
-  const createConfettiPiece = useCallback((id: number, canvasWidth: number): ConfettiPiece => {
-    const shapes: ("rect" | "circle" | "star")[] = ["rect", "circle", "star"]
-    return {
-      id,
-      x: Math.random() * canvasWidth,
-      y: -15 - Math.random() * 80,
-      vx: (Math.random() - 0.5) * 3,
-      vy: 2 + Math.random() * 4,
-      rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 0.15,
-      color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
-      size: isMobile ? 5 + Math.random() * 7 : 6 + Math.random() * 9,
-      life: 1,
-      maxLife: 180 + Math.random() * 120,
-      shape: shapes[Math.floor(Math.random() * shapes.length)],
-      wobble: Math.random() * Math.PI * 2,
-      wobbleSpeed: 0.03 + Math.random() * 0.04,
-    }
+  const resize = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const rect = canvas.getBoundingClientRect()
+    const dpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : Math.min(window.devicePixelRatio || 1, 2)
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr))
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr))
+    canvas.style.width = `${rect.width}px`
+    canvas.style.height = `${rect.height}px`
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    sizeRef.current = { w: rect.width, h: rect.height }
   }, [isMobile])
 
   useEffect(() => {
@@ -68,20 +59,35 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
       setShouldRender(true)
 
       // Initialize confetti pieces
+      const pieces: ConfettiPiece[] = []
       const canvas = canvasRef.current
       if (!canvas) return
+      // Ensure canvas is sized before seeding positions.
+      resize()
+      const { w } = sizeRef.current
 
-      const pieces: ConfettiPiece[] = []
-      const initialCount = isMobile ? 60 : 100
-
-      for (let i = 0; i < initialCount; i++) {
-        pieces.push(createConfettiPiece(i, canvas.width))
+      // Reduced count on mobile for better performance
+      const count = isMobile ? 70 : 130
+      for (let i = 0; i < count; i++) {
+        const shape: ConfettiPiece["shape"] = Math.random() > 0.45 ? "rect" : "circle"
+        pieces.push({
+          id: i,
+          x: Math.random() * w,
+          y: -10 - Math.random() * 100,
+          vx: (Math.random() - 0.5) * 80,
+          vy: 140 + Math.random() * 220,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: (Math.random() - 0.5) * 3.5,
+          color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+          size: 4 + Math.random() * 9,
+          life: 3.8 + Math.random() * 1.8,
+          maxLife: 3.8 + Math.random() * 1.8,
+          shape,
+        })
       }
       confettiPiecesRef.current = pieces
-      lastSpawnRef.current = Date.now()
-      
     } else if (!active && shouldRender) {
-      // Start fade out
+      // Fade out confetti
       if (fadeTimeoutRef.current) {
         clearTimeout(fadeTimeoutRef.current)
       }
@@ -90,7 +96,7 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
         confettiPiecesRef.current = []
         fadeTimeoutRef.current = null
         if (onComplete) onComplete()
-      }, 2500)
+      }, 2000)
     }
 
     return () => {
@@ -99,7 +105,7 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
         fadeTimeoutRef.current = null
       }
     }
-  }, [active, shouldRender, onComplete, isMobile, createConfettiPiece])
+  }, [active, shouldRender, onComplete, isMobile])
 
   useEffect(() => {
     if (!shouldRender) return
@@ -110,141 +116,77 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    const resize = () => {
-      const dpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : window.devicePixelRatio || 1
-      const rect = canvas.getBoundingClientRect()
-      canvas.width = rect.width * dpr
-      canvas.height = rect.height * dpr
-      ctx.scale(dpr, dpr)
-      canvas.style.width = `${rect.width}px`
-      canvas.style.height = `${rect.height}px`
-    }
-
     resize()
 
     let resizeTimeout: NodeJS.Timeout
     const handleResize = () => {
       clearTimeout(resizeTimeout)
-      resizeTimeout = setTimeout(resize, 200)
+      resizeTimeout = setTimeout(resize, 250)
     }
 
     window.addEventListener("resize", handleResize)
 
-    // Draw star shape
-    const drawStar = (x: number, y: number, size: number) => {
-      const spikes = 5
-      const outerRadius = size
-      const innerRadius = size * 0.4
+    lastTimeRef.current = performance.now()
 
-      ctx.beginPath()
-      for (let i = 0; i < spikes * 2; i++) {
-        const radius = i % 2 === 0 ? outerRadius : innerRadius
-        const angle = (i * Math.PI) / spikes - Math.PI / 2
-        const px = x + Math.cos(angle) * radius
-        const py = y + Math.sin(angle) * radius
-        if (i === 0) {
-          ctx.moveTo(px, py)
-        } else {
-          ctx.lineTo(px, py)
-        }
-      }
-      ctx.closePath()
-    }
-
-    const animate = () => {
-      const rect = canvas.getBoundingClientRect()
-      ctx.clearRect(0, 0, rect.width, rect.height)
-
-      // Spawn new confetti periodically while active
-      if (active) {
-        const now = Date.now()
-        const spawnInterval = isMobile ? 150 : 80
-        if (now - lastSpawnRef.current > spawnInterval && confettiPiecesRef.current.length < (isMobile ? 100 : 180)) {
-          const newCount = isMobile ? 2 : 4
-          for (let i = 0; i < newCount; i++) {
-            confettiPiecesRef.current.push(
-              createConfettiPiece(Date.now() + i, rect.width)
-            )
-          }
-          lastSpawnRef.current = now
-        }
-      }
+    const animate = (now: number) => {
+      const dt = Math.min(0.033, Math.max(0.001, (now - lastTimeRef.current) / 1000))
+      lastTimeRef.current = now
+      const { w, h } = sizeRef.current
+      ctx.clearRect(0, 0, w, h)
 
       confettiPiecesRef.current = confettiPiecesRef.current.filter((piece) => {
-        if (piece.life <= 0 || piece.y > rect.height + 50) return false
+        if (piece.life <= 0) return false
 
-        // Update wobble
-        piece.wobble += piece.wobbleSpeed
-        const wobbleX = Math.sin(piece.wobble) * 1.5
-
-        // Update position
-        piece.x += piece.vx + wobbleX
-        piece.y += piece.vy
-        piece.rotation += piece.rotationSpeed
+        // Update (dt-based)
+        const sway = Math.sin((piece.id + now * 0.001) * 0.9) * (isMobile ? 18 : 26)
+        piece.x += (piece.vx + sway) * dt
+        piece.y += piece.vy * dt
+        piece.rotation += piece.rotationSpeed * dt
 
         // Apply gravity
-        piece.vy += 0.08
+        piece.vy += 420 * dt
 
         // Air resistance
-        piece.vx *= 0.99
-        piece.vy *= 0.995
+        const drag = Math.pow(0.985, dt * 60)
+        piece.vx *= drag
+        piece.vy *= drag
 
-        // Update life (slow fade at the end)
-        piece.life -= 1 / piece.maxLife
+        // Update life
+        piece.life -= dt
 
         // Draw confetti piece
-        const alpha = piece.life > 0.3 ? 1 : piece.life / 0.3
+        const t = 1 - piece.life / piece.maxLife
+        const alpha = Math.max(0, Math.min(1, 1 - t))
         ctx.save()
-        ctx.globalAlpha = alpha
+        // Slight ease-out to make the fade feel softer.
+        ctx.globalAlpha = alpha * alpha
         ctx.translate(piece.x, piece.y)
         ctx.rotate(piece.rotation)
 
         ctx.fillStyle = piece.color
-
-        switch (piece.shape) {
-          case "rect":
-            // Draw rectangle with slight 3D effect
-            ctx.fillRect(-piece.size / 2, -piece.size / 4, piece.size, piece.size / 2)
-            // Highlight
-            ctx.fillStyle = "rgba(255, 255, 255, 0.3)"
-            ctx.fillRect(-piece.size / 2, -piece.size / 4, piece.size / 3, piece.size / 2)
-            break
-
-          case "circle":
-            ctx.beginPath()
-            ctx.arc(0, 0, piece.size / 2, 0, Math.PI * 2)
-            ctx.fill()
-            // Highlight
-            ctx.fillStyle = "rgba(255, 255, 255, 0.4)"
-            ctx.beginPath()
-            ctx.arc(-piece.size / 6, -piece.size / 6, piece.size / 4, 0, Math.PI * 2)
-            ctx.fill()
-            break
-
-          case "star":
-            drawStar(0, 0, piece.size / 2)
-            ctx.fill()
-            break
+        if (piece.shape === "rect") {
+          ctx.fillRect(-piece.size / 2, -piece.size / 4, piece.size, piece.size / 2)
+        } else {
+          ctx.beginPath()
+          ctx.arc(0, 0, piece.size / 2, 0, Math.PI * 2)
+          ctx.fill()
         }
 
         ctx.restore()
 
+        // Recycle when out of bounds (keeps FPS stable and avoids huge offscreen arrays).
+        if (piece.y > h + 40) piece.life = 0
         return true
       })
 
-      if (confettiPiecesRef.current.length > 0 || active) {
+      if (confettiPiecesRef.current.length > 0) {
         animationFrameRef.current = requestAnimationFrame(animate)
-        isAnimatingRef.current = true
-      } else {
-        isAnimatingRef.current = false
-        if (onComplete) onComplete()
+      } else if (onComplete) {
+        onComplete()
       }
     }
 
-    if (!isAnimatingRef.current) {
-      isAnimatingRef.current = true
-      animate()
-    }
+    animationFrameRef.current = requestAnimationFrame(animate)
 
     return () => {
       window.removeEventListener("resize", handleResize)
@@ -252,9 +194,8 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
-      isAnimatingRef.current = false
     }
-  }, [shouldRender, active, onComplete, isMobile, createConfettiPiece])
+  }, [shouldRender, onComplete, isMobile, resize])
 
   if (!shouldRender) return null
 

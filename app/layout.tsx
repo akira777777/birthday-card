@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
+import { IMAGES } from "./assets/images"
+import { withBasePath } from "./scripts/withBasePath"
 
 // Get base path for assets
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
@@ -44,6 +46,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
+<<<<<<< Current (Your changes)
     <html lang="ru" className="overflow-hidden">
       <head>
         {/* Preload critical PNG assets for faster loading */}
@@ -84,6 +87,17 @@ export default function RootLayout({
       <body className="overflow-hidden">
         {children}
       </body>
+=======
+    <html lang="ru">
+      <head>
+        {/* Preload critical PNG assets for a crisp, instant first paint */}
+        <link rel="preload" as="image" href={withBasePath(IMAGES.card)} />
+        {IMAGES.gnomes.map((src) => (
+          <link key={src} rel="preload" as="image" href={withBasePath(src)} />
+        ))}
+      </head>
+      <body>{children}</body>
+>>>>>>> Incoming (Background Agent changes)
     </html>
   )
 }

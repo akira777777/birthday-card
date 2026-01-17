@@ -449,6 +449,58 @@
   .animate-smoke-particle {
     animation: smoke-particle 0.6s ease-out forwards;
   }
+
+  /* ===== PNG GNOMES (smooth + non-janky) ===== */
+  @keyframes gnome-idle {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-1.2deg);
+    }
+    50% {
+      transform: translateY(-8px) rotate(1.2deg);
+    }
+  }
+
+  .gnome-idle {
+    animation: gnome-idle 2.8s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  @keyframes gnome-bounce {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    40% {
+      transform: translateY(-26px) scale(1.08);
+    }
+    70% {
+      transform: translateY(-10px) scale(1.04);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .gnome-bounce {
+    animation: gnome-bounce 600ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  /* ===== PNG CARD ENTRANCE / FLOAT ===== */
+  @keyframes card-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .card-float {
+    animation: card-float 6s ease-in-out infinite;
+    will-change: transform;
+  }
 }
 
 /* ===== MOBILE OPTIMIZATIONS ===== */
