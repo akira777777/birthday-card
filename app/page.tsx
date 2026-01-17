@@ -1,13 +1,15 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { BirthdayCard } from "./components/birthday-card"
-import { Fireworks, FireworksHandle } from "./components/fireworks"
-import { Confetti } from "./components/confetti"
-import { Gnome } from "./components/gnome"
-import { soundManager } from "./utils/sounds"
+import { BirthdayCard } from "@/components/birthday-card"
+import { Fireworks, FireworksHandle } from "@/components/fireworks"
+import { Confetti } from "@/components/confetti"
+import { Gnome } from "@/components/gnome"
 
-const GNOME_COUNT = 4
+const GNOME_COUNT = 3
+const REDUCED_MOTION_FACTOR = 0.6
+const MIN_STARS_COUNT = 20
+const MIN_TWINKLE_COUNT = 6
 
 interface GnomePosition {
   id: number
@@ -21,26 +23,10 @@ export default function BirthdayCardPage() {
   const [showCard, setShowCard] = useState(false)
   const [gnomesVisible, setGnomesVisible] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const [confettiActive, setConfettiActive] = useState(false)
   const fireworksRef = useRef<FireworksHandle>(null)
-  const timeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set())
-
-  // Helper to track timeouts for cleanup
-  const trackTimeout = useCallback((timeoutId: NodeJS.Timeout) => {
-    timeoutsRef.current.add(timeoutId)
-    return timeoutId
-  }, [])
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    // Capture current ref value to avoid stale closure issues
-    const timeouts = timeoutsRef.current
-    return () => {
-      // Clear all tracked timeouts
-      timeouts.forEach((timeoutId) => clearTimeout(timeoutId))
-      timeouts.clear()
-    }
-  }, [])
+  const timeoutsRef = useRef<number[]>([])
 
   // Detect mobile device
   useEffect(() => {
@@ -52,8 +38,31 @@ export default function BirthdayCardPage() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
+  // Respect reduced motion preference
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const updatePreference = () => setPrefersReducedMotion(media.matches)
+
+    updatePreference()
+    if (media.addEventListener) {
+      media.addEventListener("change", updatePreference)
+      return () => media.removeEventListener("change", updatePreference)
+    }
+
+    media.addListener(updatePreference)
+    return () => media.removeListener(updatePreference)
+  }, [])
+
   // Fewer clicks needed on mobile for better UX
-  const clicksNeeded = useMemo(() => (isMobile ? 6 : 10), [isMobile])
+  const clicksNeeded = useMemo(() => (isMobile ? 3 : 5), [isMobile])
+
+  const scaleCount = useCallback(
+    (count: number, min = 1) => {
+      const factor = prefersReducedMotion ? REDUCED_MOTION_FACTOR : 1
+      return Math.max(min, Math.round(count * factor))
+    },
+    [prefersReducedMotion]
+  )
 
   // Generate random position for gnomes - optimized for mobile
   const generateRandomPosition = useCallback(
@@ -79,21 +88,36 @@ export default function BirthdayCardPage() {
     [isMobile]
   )
 
+  const createGnomes = useCallback(() => {
+    return Array.from({ length: GNOME_COUNT }, (_, index) => generateRandomPosition(index))
+  }, [generateRandomPosition])
+
   // Initialize gnomes
   useEffect(() => {
-    const initialGnomes: GnomePosition[] = []
-    for (let i = 0; i < GNOME_COUNT; i++) {
-      initialGnomes.push(generateRandomPosition(i))
-    }
-    setGnomes(initialGnomes)
+    setGnomes(createGnomes())
 
     const handleResize = () => {
-      setGnomes((prev) => prev.map((gnome) => generateRandomPosition(gnome.id)))
+      setGnomes(createGnomes())
     }
 
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [generateRandomPosition])
+  }, [createGnomes])
+
+  const scheduleTimeout = useCallback((callback: () => void, delay: number) => {
+    const id = window.setTimeout(callback, delay)
+    timeoutsRef.current.push(id)
+    return id
+  }, [])
+
+  const clearScheduledTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach((id) => window.clearTimeout(id))
+    timeoutsRef.current = []
+  }, [])
+
+  useEffect(() => {
+    return () => clearScheduledTimeouts()
+  }, [clearScheduledTimeouts])
 
   const handleGnomeClick = useCallback(
     (clickX: number, clickY: number, gnomeId?: number) => {
@@ -102,12 +126,10 @@ export default function BirthdayCardPage() {
       const newCount = clickCount + 1
       setClickCount(newCount)
 
-      // Play click sound
-      soundManager.playClick()
-
-      // Launch fireworks at click position (fewer particles on mobile)
+      // Launch fireworks at click position (fewer particles on mobile/reduced motion)
       if (fireworksRef.current) {
-        fireworksRef.current.launch(clickX, clickY, isMobile ? 30 : 50)
+        const baseParticles = isMobile ? 30 : 50
+        fireworksRef.current.launch(clickX, clickY, scaleCount(baseParticles, 20))
       }
 
       // If reached target clicks, show card
@@ -115,22 +137,18 @@ export default function BirthdayCardPage() {
         setGnomesVisible(false)
 
         // Launch spectacular fireworks show
-        trackTimeout(setTimeout(() => {
+        scheduleTimeout(() => {
           if (fireworksRef.current) {
             const centerX = window.innerWidth / 2
             const centerY = window.innerHeight / 2
-            const particleCount = isMobile ? 60 : 100
-            const extraParticles = isMobile ? 40 : 80
+            const particleCount = scaleCount(isMobile ? 60 : 100, 40)
+            const extraParticles = scaleCount(isMobile ? 40 : 80, 25)
 
             // First wave: ring fireworks
-            const ringCount = isMobile ? 6 : 12
+            const ringCount = scaleCount(isMobile ? 6 : 12, 4)
             for (let i = 0; i < ringCount; i++) {
-              trackTimeout(setTimeout(() => {
+              scheduleTimeout(() => {
                 if (fireworksRef.current) {
-                  // Play firework sound occasionally
-                  if (i % 3 === 0) {
-                    soundManager.playFirework()
-                  }
                   const angle = (Math.PI * 2 * i) / ringCount
                   const distance = isMobile ? 100 : 200
                   fireworksRef.current.launch(
@@ -139,57 +157,55 @@ export default function BirthdayCardPage() {
                     particleCount
                   )
                 }
-              }, i * (isMobile ? 200 : 150)))
+              }, i * (isMobile ? 200 : 150))
             }
 
             // Additional random fireworks
-            const additionalCount = isMobile ? 3 : 6
+            const additionalCount = scaleCount(isMobile ? 3 : 6, 2)
             for (let i = 0; i < additionalCount; i++) {
-              trackTimeout(setTimeout(() => {
+              scheduleTimeout(() => {
                 if (fireworksRef.current) {
                   const randomX = centerX + (Math.random() - 0.5) * window.innerWidth * 0.6
                   const randomY = centerY + (Math.random() - 0.5) * window.innerHeight * 0.6
                   fireworksRef.current.launch(randomX, randomY, extraParticles)
                 }
-              }, (isMobile ? 1200 : 1800) + i * 200))
+              }, (isMobile ? 1200 : 1800) + i * 200)
             }
 
             // Final center mega-firework
-            trackTimeout(setTimeout(
+            scheduleTimeout(
               () => {
                 if (fireworksRef.current) {
-                  fireworksRef.current.launch(centerX, centerY, isMobile ? 100 : 150)
-                  trackTimeout(setTimeout(() => {
+                  fireworksRef.current.launch(centerX, centerY, scaleCount(isMobile ? 100 : 150, 60))
+                  scheduleTimeout(() => {
                     if (fireworksRef.current) {
-                      const burstCount = isMobile ? 3 : 5
+                      const burstCount = scaleCount(isMobile ? 3 : 5, 2)
                       for (let j = 0; j < burstCount; j++) {
-                        trackTimeout(setTimeout(() => {
+                        scheduleTimeout(() => {
                           if (fireworksRef.current) {
                             const offset = isMobile ? 50 : 80
                             fireworksRef.current.launch(
                               centerX + (Math.random() - 0.5) * offset,
                               centerY + (Math.random() - 0.5) * offset,
-                              isMobile ? 40 : 60
+                              scaleCount(isMobile ? 40 : 60, 25)
                             )
                           }
-                        }, j * 100))
+                        }, j * 100)
                       }
                     }
-                  }, 200))
+                  }, 200)
                 }
                 setShowCard(true)
-                // Activate confetti after card appears (with delay for fireworks to complete)
-                trackTimeout(setTimeout(() => {
-                  setConfettiActive(true)
-                }, 500))
+                // Start confetti
+                scheduleTimeout(() => setConfettiActive(true), 500)
               },
               isMobile ? 1500 : 2000
-            ))
+            )
           }
-        }, 300))
+        }, 300)
       } else {
         // Move clicked gnome to new position
-        trackTimeout(setTimeout(() => {
+        scheduleTimeout(() => {
           setGnomes((prev) => {
             const newGnomes = [...prev]
             let gnomeToMove = prev[0]
@@ -211,51 +227,52 @@ export default function BirthdayCardPage() {
             }
             return newGnomes
           })
-        }, 700))
+        }, 700)
       }
     },
-    [clickCount, showCard, gnomesVisible, generateRandomPosition, isMobile, clicksNeeded, trackTimeout]
+    [clickCount, showCard, gnomesVisible, generateRandomPosition, isMobile, clicksNeeded, scaleCount, scheduleTimeout]
   )
 
   // Stars count based on device
-  const starsCount = isMobile ? 40 : 80
-  const twinkleCount = isMobile ? 10 : 20
+  const starsCount = useMemo(() => scaleCount(isMobile ? 40 : 80, MIN_STARS_COUNT), [isMobile, scaleCount])
+  const twinkleCount = useMemo(
+    () => scaleCount(isMobile ? 10 : 20, MIN_TWINKLE_COUNT),
+    [isMobile, scaleCount]
+  )
 
-  // Generate stable star positions using useMemo to avoid hydration issues
-  const stars = useMemo(() => {
-    const seededRandom = (seed: number) => {
-      const x = Math.sin(seed) * 10000
-      return x - Math.floor(x)
-    }
-    return Array.from({ length: starsCount }, (_, i) => {
-      const seed = i * 7919
-      return {
-        left: seededRandom(seed) * 100,
-        top: seededRandom(seed + 1) * 100,
-        size: seededRandom(seed + 2) * 3 + 1,
-        opacity: seededRandom(seed + 3) * 0.6 + 0.3,
-        delay: seededRandom(seed + 4) * 3,
-        duration: 2 + seededRandom(seed + 5) * 4,
-      }
-    })
-  }, [starsCount])
+  const stars = useMemo(
+    () =>
+      Array.from({ length: starsCount }, () => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        size: Math.random() * 3 + 1,
+        opacity: Math.random() * 0.6 + 0.3,
+        delay: Math.random() * 3,
+        duration: 2 + Math.random() * 4,
+      })),
+    [starsCount]
+  )
 
-  const twinkles = useMemo(() => {
-    const seededRandom = (seed: number) => {
-      const x = Math.sin(seed) * 10000
-      return x - Math.floor(x)
-    }
-    return Array.from({ length: twinkleCount }, (_, i) => {
-      const seed = (i + starsCount) * 7919
-      return {
-        left: seededRandom(seed) * 100,
-        top: seededRandom(seed + 1) * 100,
-        width: seededRandom(seed + 2) * 2 + 1,
-        height: seededRandom(seed + 3) * 2 + 1,
-        delay: seededRandom(seed + 4) * 2,
-      }
-    })
-  }, [twinkleCount, starsCount])
+  const twinkles = useMemo(
+    () =>
+      Array.from({ length: twinkleCount }, () => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        size: Math.random() * 2 + 1,
+        delay: Math.random() * 2,
+      })),
+    [twinkleCount]
+  )
+
+  const handleReset = useCallback(() => {
+    clearScheduledTimeouts()
+    fireworksRef.current?.clear()
+    setClickCount(0)
+    setShowCard(false)
+    setConfettiActive(false)
+    setGnomesVisible(true)
+    setGnomes(createGnomes())
+  }, [clearScheduledTimeouts, createGnomes])
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-gradient-to-br from-purple-900 via-indigo-900 via-blue-900 to-purple-950 touch-none select-none">
@@ -272,8 +289,8 @@ export default function BirthdayCardPage() {
             key={`star-${i}`}
             className="absolute rounded-full bg-white animate-pulse"
             style={{
-              left: `${star.left}%`,
-              top: `${star.top}%`,
+              left: star.left,
+              top: star.top,
               width: `${star.size}px`,
               height: `${star.size}px`,
               opacity: star.opacity,
@@ -290,10 +307,10 @@ export default function BirthdayCardPage() {
             key={`twinkle-${i}`}
             className="absolute rounded-full bg-yellow-200 animate-pulse"
             style={{
-              left: `${twinkle.left}%`,
-              top: `${twinkle.top}%`,
-              width: `${twinkle.width}px`,
-              height: `${twinkle.height}px`,
+              left: twinkle.left,
+              top: twinkle.top,
+              width: `${twinkle.size}px`,
+              height: `${twinkle.size}px`,
               opacity: 0,
               animationDelay: `${twinkle.delay}s`,
               animationDuration: "1.5s",
@@ -304,7 +321,7 @@ export default function BirthdayCardPage() {
       </div>
 
       {/* Fireworks canvas */}
-      <Fireworks ref={fireworksRef} isMobile={isMobile} />
+      <Fireworks ref={fireworksRef} />
 
       {/* Confetti */}
       <Confetti active={confettiActive} isMobile={isMobile} />
@@ -314,6 +331,8 @@ export default function BirthdayCardPage() {
         <div
           className={`absolute left-1/2 transform -translate-x-1/2 z-20 bg-black/60 backdrop-blur-xl border-2 border-yellow-400/80 shadow-2xl shadow-yellow-400/50 animate-scale-in ${isMobile ? "top-4 rounded-2xl px-4 py-3" : "top-8 rounded-full px-8 py-4"
             }`}
+          role="status"
+          aria-live="polite"
         >
           <div className={`flex ${isMobile ? "flex-col gap-2" : "flex-row items-center gap-4"}`}>
             <p className={`text-white font-bold whitespace-nowrap text-center ${isMobile ? "text-base" : "text-lg"}`}>
@@ -352,14 +371,8 @@ export default function BirthdayCardPage() {
       ))}
 
       {/* Birthday card */}
-      <BirthdayCard
-        isVisible={showCard}
-        isMobile={isMobile}
-        onCakeComplete={() => {
-          // Trigger additional confetti when all candles are blown
-          setConfettiActive(true)
-        }}
-      />
+      <BirthdayCard isVisible={showCard} isMobile={isMobile} onReplay={handleReset} />
+
 
       {/* Instructions - mobile optimized */}
       {clickCount === 0 && !showCard && (

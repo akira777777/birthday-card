@@ -18,8 +18,8 @@ interface ConfettiPiece {
 
 interface ConfettiProps {
   active: boolean
-  onComplete?: () => void
   isMobile?: boolean
+  onComplete?: () => void
 }
 
 const confettiColors = [
@@ -28,28 +28,58 @@ const confettiColors = [
   "#54A0FF", "#5F27CD", "#00D2D3", "#FF9F43", "#FF6348"
 ]
 
-export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps) {
+export function Confetti({ active, isMobile = false, onComplete }: ConfettiProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number>()
   const confettiPiecesRef = useRef<ConfettiPiece[]>([])
   const [shouldRender, setShouldRender] = useState(false)
-  const fadeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const canvasSizeRef = useRef({ width: 0, height: 0 })
 
   useEffect(() => {
     if (active && !shouldRender) {
       setShouldRender(true)
+    } else if (!active && shouldRender) {
+      // Fade out confetti
+      setTimeout(() => {
+        setShouldRender(false)
+        confettiPiecesRef.current = []
+        if (onComplete) onComplete()
+      }, 2000)
+    }
+  }, [active, shouldRender, onComplete])
 
-      // Initialize confetti pieces
+  useEffect(() => {
+    if (!shouldRender) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const rect = canvas.getBoundingClientRect()
+      canvasSizeRef.current = { width: rect.width, height: rect.height }
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.scale(dpr, dpr)
+      canvas.style.width = `${rect.width}px`
+      canvas.style.height = `${rect.height}px`
+    }
+
+    resize()
+
+    // Initialize confetti pieces after canvas is sized
+    if (confettiPiecesRef.current.length === 0) {
       const pieces: ConfettiPiece[] = []
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      // Reduced count on mobile for better performance
+      const { width, height } = canvasSizeRef.current
       const count = isMobile ? 80 : 150
       for (let i = 0; i < count; i++) {
         pieces.push({
           id: i,
-          x: Math.random() * canvas.width,
+          x: Math.random() * width,
           y: -10 - Math.random() * 100,
           vx: (Math.random() - 0.5) * 2,
           vy: 2 + Math.random() * 4,
@@ -62,48 +92,7 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
         })
       }
       confettiPiecesRef.current = pieces
-    } else if (!active && shouldRender) {
-      // Fade out confetti
-      if (fadeTimeoutRef.current) {
-        clearTimeout(fadeTimeoutRef.current)
-      }
-      fadeTimeoutRef.current = setTimeout(() => {
-        setShouldRender(false)
-        confettiPiecesRef.current = []
-        fadeTimeoutRef.current = null
-        if (onComplete) onComplete()
-      }, 2000)
     }
-
-    return () => {
-      if (fadeTimeoutRef.current) {
-        clearTimeout(fadeTimeoutRef.current)
-        fadeTimeoutRef.current = null
-      }
-    }
-  }, [active, shouldRender, onComplete, isMobile])
-
-  useEffect(() => {
-    if (!shouldRender) return
-
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    const resize = () => {
-      // Lower DPR on mobile for better performance
-      const dpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : window.devicePixelRatio || 1
-      const rect = canvas.getBoundingClientRect()
-      canvas.width = rect.width * dpr
-      canvas.height = rect.height * dpr
-      ctx.scale(dpr, dpr)
-      canvas.style.width = `${rect.width}px`
-      canvas.style.height = `${rect.height}px`
-    }
-
-    resize()
 
     let resizeTimeout: NodeJS.Timeout
     const handleResize = () => {

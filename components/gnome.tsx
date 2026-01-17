@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useState } from "react"
+import Image from "next/image"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 interface GnomeProps {
   id: number
@@ -11,142 +12,175 @@ interface GnomeProps {
   isMobile?: boolean
 }
 
-const gnomeColors = [
-  { hat: "#FF6B6B", body: "#4ECDC4", beard: "#95E1D3" },
-  { hat: "#FFD93D", body: "#6BCF7F", beard: "#95E1D3" },
-  { hat: "#A8E6CF", body: "#FFD93D", beard: "#FFA07A" },
-  { hat: "#95E1D3", body: "#F38181", beard: "#AAE3E2" },
-  { hat: "#F38181", body: "#FFD93D", beard: "#C7CEEA" },
+// Get base path for GitHub Pages compatibility
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+
+// Gnome images mapping
+const gnomeImagePaths = [
+  "/assets/images/gnome-1.png",
+  "/assets/images/gnome-2.png",
+  "/assets/images/gnome-3.png",
 ]
 
 export function Gnome({ id, x, y, onClick, isVisible, isMobile = false }: GnomeProps) {
   const [isBouncing, setIsBouncing] = useState(false)
-  const [colorSet] = useState(gnomeColors[id % gnomeColors.length])
-  const bounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [isHovered, setIsHovered] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const lastTapRef = useRef<number>(0)
 
-  // Larger size on mobile for easier tapping
-  const size = isMobile ? { width: 100, height: 130 } : { width: 120, height: 160 }
+  // Get gnome image based on ID with base path
+  const gnomeImage = useMemo(() => {
+    const path = gnomeImagePaths[id % gnomeImagePaths.length]
+    return `${basePath}${path}`
+  }, [id])
 
-  const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
+  // Size based on device
+  const size = isMobile
+    ? { width: 100, height: 140 }
+    : { width: 130, height: 180 }
+
+  // Haptic feedback
+  const triggerHaptic = useCallback(() => {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate([15, 30, 15])
+    }
+  }, [])
+
+  // Prevent double-tap zoom on mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const now = Date.now()
+    if (now - lastTapRef.current < 300) {
+      e.preventDefault()
+    }
+    lastTapRef.current = now
+  }, [])
+
+  const handleClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
     if (isBouncing) return
 
     setIsBouncing(true)
+    triggerHaptic()
+
     // Center of gnome for fireworks
     onClick(x + size.width / 2, y + size.height / 2, id)
-    if (bounceTimeoutRef.current) {
-      clearTimeout(bounceTimeoutRef.current)
-    }
-    bounceTimeoutRef.current = setTimeout(() => {
-      setIsBouncing(false)
-      bounceTimeoutRef.current = null
-    }, 600)
-  }
+
+    setTimeout(() => setIsBouncing(false), 600)
+  }, [isBouncing, onClick, x, y, size.width, size.height, id, triggerHaptic])
+
+  // Mouse/touch handlers for hover state
+  const handlePointerEnter = useCallback(() => {
+    if (!isMobile) setIsHovered(true)
+  }, [isMobile])
+
+  const handlePointerLeave = useCallback(() => {
+    setIsHovered(false)
+  }, [])
 
   // Cleanup on unmount
-  if (!isVisible) {
-    if (bounceTimeoutRef.current) {
-      clearTimeout(bounceTimeoutRef.current)
-      bounceTimeoutRef.current = null
+  useEffect(() => {
+    return () => {
+      setIsBouncing(false)
+      setIsHovered(false)
     }
-    return null
-  }
+  }, [])
+
+  if (!isVisible) return null
+
+  const scale = isBouncing ? 1.25 : isHovered ? 1.1 : 1
+  const translateY = isBouncing ? -30 : isHovered ? -10 : 0
+  const rotation = isBouncing ? (Math.random() > 0.5 ? 5 : -5) : 0
 
   return (
     <button
+      ref={buttonRef}
       onClick={handleClick}
+      onTouchStart={handleTouchStart}
       onTouchEnd={handleClick}
-      className={`absolute cursor-pointer transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 rounded-full will-change-transform active:scale-125 ${isBouncing ? "animate-bounce-gnome" : "animate-pulse-gnome"
-        } ${isMobile ? "hover:scale-105" : "hover:scale-110"}`}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      className={`absolute cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 rounded-full gpu-accelerated no-select ${isBouncing ? "animate-bounce-gnome" : "animate-pulse-gnome"
+        }`}
       style={{
         left: `${x}px`,
         top: `${y}px`,
-        transform: isBouncing ? "scale(1.2) translateY(-30px)" : "none",
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        transform: `scale(${scale}) translateY(${translateY}px) rotate(${rotation}deg)`,
         pointerEvents: isBouncing ? "none" : "auto",
-        transition: isBouncing ? "none" : "left 0.5s ease-out, top 0.5s ease-out",
+        transition: isBouncing
+          ? "none"
+          : "left 0.5s ease-out, top 0.5s ease-out, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
         filter: isBouncing
-          ? "drop-shadow(0 0 20px rgba(255, 215, 0, 0.8))"
-          : "drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3))",
-        // Larger touch target on mobile
-        padding: isMobile ? "10px" : "0",
-        margin: isMobile ? "-10px" : "0",
+          ? "drop-shadow(0 0 30px rgba(255, 215, 0, 1)) drop-shadow(0 0 60px rgba(255, 215, 0, 0.6))"
+          : isHovered
+            ? "drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.3))"
+            : "drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4))",
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
+        zIndex: isBouncing ? 100 : 10,
       }}
-      aria-label={`Click gnome ${id + 1}`}
+      aria-label={`Нажми на гномика ${id + 1}`}
       disabled={isBouncing}
     >
-      <svg
+      {/* Glow effect behind gnome */}
+      <div
+        className={`absolute inset-0 rounded-full transition-opacity duration-300 ${isBouncing ? 'opacity-100' : isHovered ? 'opacity-50' : 'opacity-0'
+          }`}
+        style={{
+          background: 'radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, transparent 70%)',
+          transform: 'scale(1.5)',
+        }}
+      />
+
+      {/* Gnome image */}
+      <Image
+        src={gnomeImage}
+        alt={`Гномик ${id + 1}`}
         width={size.width}
         height={size.height}
-        viewBox="0 0 120 160"
-        className="drop-shadow-2xl"
+        className={`object-contain transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
         style={{
           touchAction: "manipulation",
-          filter: isBouncing
-            ? "drop-shadow(0 0 25px rgba(255, 215, 0, 1))"
-            : "drop-shadow(0 10px 30px rgba(0, 0, 0, 0.4))",
-          transition: "filter 0.3s ease",
         }}
-      >
-        {/* Hat */}
-        <path
-          d="M20 30 Q20 10 40 10 Q60 10 80 10 Q100 10 100 30 L100 50 Q100 60 90 65 L80 70 L40 70 L30 65 Q20 60 20 50 Z"
-          fill={colorSet.hat}
-          stroke="#2C3E50"
-          strokeWidth="2"
+        onLoad={() => setImageLoaded(true)}
+        priority
+        draggable={false}
+      />
+
+      {/* Sparkle effects when bouncing */}
+      {isBouncing && (
+        <>
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-ping"
+              style={{
+                left: `${20 + Math.random() * 60}%`,
+                top: `${10 + Math.random() * 40}%`,
+                width: '8px',
+                height: '8px',
+                backgroundColor: '#FFD700',
+                borderRadius: '50%',
+                animationDuration: '0.6s',
+                animationDelay: `${i * 0.1}s`,
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Touch feedback ripple on mobile */}
+      {isMobile && isBouncing && (
+        <div
+          className="absolute inset-0 rounded-full bg-yellow-400/40 animate-ping"
+          style={{ animationDuration: '0.6s' }}
         />
-        <circle cx="60" cy="45" r="8" fill="#FFD700" />
-        <circle cx="60" cy="35" r="5" fill="#FFD700" />
-
-        {/* Face */}
-        <circle cx="60" cy="90" r="35" fill="#FFDBAC" stroke="#2C3E50" strokeWidth="2" />
-
-        {/* Eyes - cute blinking animation */}
-        <circle cx="50" cy="85" r="5" fill="#2C3E50" />
-        <circle cx="70" cy="85" r="5" fill="#2C3E50" />
-        <circle cx="48" cy="83" r="2" fill="white" />
-        <circle cx="68" cy="83" r="2" fill="white" />
-
-        {/* Rosy cheeks */}
-        <circle cx="40" cy="95" r="6" fill="#FFB6C1" opacity="0.6" />
-        <circle cx="80" cy="95" r="6" fill="#FFB6C1" opacity="0.6" />
-
-        {/* Nose */}
-        <ellipse cx="60" cy="95" rx="4" ry="5" fill="#FF8C69" />
-
-        {/* Smile */}
-        <path d="M50 105 Q60 115 70 105" stroke="#2C3E50" strokeWidth="2" fill="none" strokeLinecap="round" />
-
-        {/* Beard */}
-        <path
-          d="M35 110 Q35 135 60 145 Q85 135 85 110 L85 100 Q85 95 80 90 L40 90 Q35 95 35 100 Z"
-          fill={colorSet.beard}
-          stroke="#2C3E50"
-          strokeWidth="2"
-        />
-
-        {/* Body */}
-        <rect x="35" y="120" width="50" height="40" rx="25" fill={colorSet.body} stroke="#2C3E50" strokeWidth="2" />
-
-        {/* Arms */}
-        <ellipse cx="25" cy="125" rx="10" ry="18" fill={colorSet.body} stroke="#2C3E50" strokeWidth="2" />
-        <ellipse cx="95" cy="125" rx="10" ry="18" fill={colorSet.body} stroke="#2C3E50" strokeWidth="2" />
-
-        {/* Hands */}
-        <circle cx="25" cy="140" r="6" fill="#FFDBAC" stroke="#2C3E50" strokeWidth="1.5" />
-        <circle cx="95" cy="140" r="6" fill="#FFDBAC" stroke="#2C3E50" strokeWidth="1.5" />
-
-        {/* Belt with buckle */}
-        <rect x="35" y="140" width="50" height="10" fill="#2C3E50" />
-        <rect x="52" y="141" width="16" height="8" rx="2" fill="#FFD700" />
-
-        {/* Legs/Boots */}
-        <ellipse cx="45" cy="158" rx="10" ry="6" fill="#2C3E50" />
-        <ellipse cx="75" cy="158" rx="10" ry="6" fill="#2C3E50" />
-      </svg>
+      )}
     </button>
   )
 }
