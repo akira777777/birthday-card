@@ -66,20 +66,6 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
   useEffect(() => {
     if (active && !shouldRender) {
       setShouldRender(true)
-
-      // Initialize confetti pieces
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const pieces: ConfettiPiece[] = []
-      const initialCount = isMobile ? 60 : 100
-
-      for (let i = 0; i < initialCount; i++) {
-        pieces.push(createConfettiPiece(i, canvas.width))
-      }
-      confettiPiecesRef.current = pieces
-      lastSpawnRef.current = Date.now()
-      
     } else if (!active && shouldRender) {
       // Start fade out
       if (fadeTimeoutRef.current) {
@@ -100,6 +86,25 @@ export function Confetti({ active, onComplete, isMobile = false }: ConfettiProps
       }
     }
   }, [active, shouldRender, onComplete, isMobile, createConfettiPiece])
+
+  useEffect(() => {
+    if (!shouldRender || !active) return
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const canvasWidth = rect.width || window.innerWidth || 1
+    const pieces: ConfettiPiece[] = []
+    const initialCount = isMobile ? 60 : 100
+
+    for (let i = 0; i < initialCount; i++) {
+      pieces.push(createConfettiPiece(i, canvasWidth))
+    }
+
+    confettiPiecesRef.current = pieces
+    lastSpawnRef.current = Date.now()
+  }, [shouldRender, active, isMobile, createConfettiPiece])
 
   useEffect(() => {
     if (!shouldRender) return
